@@ -296,6 +296,10 @@ func runLogin(cmd *cobra.Command, argv []string) (err error) {
 			return fmt.Errorf("cannot connect to backplane API URL, check if you need to use a proxy/VPN to access backplane: %v", connErr)
 		}
 
+		// Add suggestion to run connectivity health check if login fails
+		fmt.Println("Login failed. To troubleshoot connectivity issues, please run the following command:")
+		fmt.Println("ocm-backplane health-check")
+
 		// Otherwise, return the failure
 		return fmt.Errorf("can't login to cluster: %v", err)
 	}

@@ -17,11 +17,12 @@ import (
 
 // Please update the validateConfig function if there is any required config key added
 type BackplaneConfiguration struct {
-	URL              string  `json:"url"`
-	ProxyURL         *string `json:"proxy-url"`
-	SessionDirectory string  `json:"session-dir"`
-	AssumeInitialArn string  `json:"assume-initial-arn"`
-	PagerDutyAPIKey  string  `json:"pd-key"`
+	URL              string   `json:"url"`
+	ProxyURL         *string  `json:"proxy-url"`
+	ProxyURLs        []string `json:"proxy-urls"`
+	SessionDirectory string   `json:"session-dir"`
+	AssumeInitialArn string   `json:"assume-initial-arn"`
+	PagerDutyAPIKey  string   `json:"pd-key"`
 }
 
 // GetConfigFilePath returns the Backplane CLI configuration filepath
@@ -63,7 +64,6 @@ func GetBackplaneConfiguration() (bpConfig BackplaneConfiguration, err error) {
 	}
 
 	if err = validateConfig(); err != nil {
-		// FIXME: we should return instead of warning here, after the tests do not require external network access
 		logger.Warn(err)
 	}
 
@@ -81,7 +81,7 @@ func GetBackplaneConfiguration() (bpConfig BackplaneConfiguration, err error) {
 	// Warn if user has explicitly defined backplane URL via env
 	url, ok := getBackplaneEnv(info.BackplaneURLEnvName)
 	if ok {
-		logger.Warn(fmt.Printf("Manual URL configuration is deprecated, please unset the environment %s", info.BackplaneURLEnvName))
+		logger.Warn(fmt.Sprintf("Manual URL configuration is deprecated, please unset the environment %s", info.BackplaneURLEnvName))
 		bpConfig.URL = url
 	} else {
 		// Fetch backplane URL from ocm env
@@ -90,11 +90,10 @@ func GetBackplaneConfiguration() (bpConfig BackplaneConfiguration, err error) {
 		}
 	}
 
-	// proxyURL is required
-	proxyInConfigFile := viper.GetStringSlice("proxy-url")
-	proxyURL := bpConfig.getFirstWorkingProxyURL(proxyInConfigFile)
-	if proxyURL != "" {
-		bpConfig.ProxyURL = &proxyURL
+	// Load proxy URLs as a slice of strings
+	bpConfig.ProxyURLs = viper.GetStringSlice("proxy-url")
+	if len(bpConfig.ProxyURLs) > 0 {
+		bpConfig.ProxyURL = &bpConfig.ProxyURLs[0]
 	}
 
 	bpConfig.SessionDirectory = viper.GetString("session-dir")
